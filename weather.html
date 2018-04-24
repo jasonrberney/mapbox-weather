@@ -7,22 +7,21 @@
 <script src="./radar4.js"></script>
 <script src="./radar5.js"></script>
 <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.css' rel='stylesheet' />
+<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
+
 <style>
     body { margin:0; padding:0; }
     #map { position:absolute; top:0; bottom:0; width:100%; }
 </style>
 
-<div id='map'></div>
+<div id='map'>
+    <button onclick="loopRadar()">radar</button>
+</div>
 
 <script>
 mapboxgl.accessToken = 'pk.eyJ1IjoiZXRwaW5hcmQiLCJhIjoiY2luMHIyc2YwMGFzcXZobTRpYTBvZTFrOCJ9.GuIGZ1prg2ziFQ_bzdu5Lw';
 
 var radar = [geojson1, geojson2, geojson3, geojson4, geojson5]
-// var radar1 = geojson1
-// var radar2 = geojson2
-// var radar3 = geojson3
-// var radar4 = geojson4
-// var radar5 = geojson5
 
 radar.forEach(radarElem => {
     insertColor(radarElem);
@@ -40,12 +39,13 @@ var map = new mapboxgl.Map({
     pitch: 80
 });
 
+let layerNames = [];
+
 map.on('load', function() {
     count = 0;
-    layerNames = [];
+
     radar.forEach(finalRadar => {
 
-        count ++;
         var sourceName = 'source' + count;
         var layerName = 'layer' + count;
         layerNames.push(layerName);
@@ -76,43 +76,108 @@ map.on('load', function() {
                 visibility: 'none',
             },
         });
+
+        count ++;
     });
 });
 
-setInterval(function () {
+// setInterval(function () {
 
-    visibleLayers = [];
+//     visibleLayers = [];
 
-    if(!visibleLayers.includes('layer1')) {
-        map.setLayoutProperty('layer1', 'visibility', 'visible');
-        visibleLayers.push('layer1');
-        console.log("added layer 1");
-        sleep(10000);
-    }
-    if(!visibleLayers.includes('layer2')) {
-        map.setLayoutProperty('layer2', 'visibility', 'visible');
-        visibleLayers.push('layer2');
-        console.log("added layer 2");
-        sleep(10000);
-        map.setLayoutProperty('layer1', 'visibility', 'none');
-        removeItem(visibleLayers, 'layer1');
-        console.log("removed layer 1");
-        sleep(10000);
-    }
-    if(!visibleLayers.includes('layer3')) {
-        map.setLayoutProperty('layer3', 'visibility', 'visible');
-        visibleLayers.push('layer3');
-        console.log("added layer 3");
-        sleep(10000);
-        map.setLayoutProperty('layer2', 'visibility', 'none');
-        removeItem(visibleLayers, 'layer2');
-        console.log("removed layer 2");
-        sleep(10000);
-    }
-    map.setLayoutProperty('layer3', 'visibility', 'none');
-    removeItem(visibleLayers, 'layer3');
-    console.log("removed layer 3");
-}, 10000);
+//     if(!visibleLayers.includes('layer1')) {
+//         map.setLayoutProperty('layer1', 'visibility', 'visible');
+//         visibleLayers.push('layer1');
+//         console.log("added layer 1");
+//         sleep(10000);
+//     }
+//     if(!visibleLayers.includes('layer2')) {
+//         map.setLayoutProperty('layer2', 'visibility', 'visible');
+//         visibleLayers.push('layer2');
+//         console.log("added layer 2");
+//         sleep(10000);
+//         map.setLayoutProperty('layer1', 'visibility', 'none');
+//         removeItem(visibleLayers, 'layer1');
+//         console.log("removed layer 1");
+//         sleep(10000);
+//     }
+//     if(!visibleLayers.includes('layer3')) {
+//         map.setLayoutProperty('layer3', 'visibility', 'visible');
+//         visibleLayers.push('layer3');
+//         console.log("added layer 3");
+//         sleep(10000);
+//         map.setLayoutProperty('layer2', 'visibility', 'none');
+//         removeItem(visibleLayers, 'layer2');
+//         console.log("removed layer 2");
+//         sleep(10000);
+//     }
+//     map.setLayoutProperty('layer3', 'visibility', 'none');
+//     removeItem(visibleLayers, 'layer3');
+//     console.log("removed layer 3");
+// }, 10000);
+var currentRadar = [];
+
+function loopRadar() {
+    radarCount = 0;
+
+    setInterval(function () {
+        
+        setLayersInvisible();
+
+        layerNames.forEach(function(layer, idx, array) {
+            if (idx === array.length -1) {
+                radarCount = 0;
+                currentRadar = [];
+            }
+            else if (radarCount < 2) {
+
+                radarCount ++; 
+                currentRadar.push(layer);
+
+                map.setLayoutProperty(layer, 'visibility', 'visible');
+
+                // setTimeout(function () {
+                //     map.setLayoutProperty(layer, 'visibility', 'visible');
+                // }, 2000);          
+            }   
+            else if (radarCount === 2) {
+                radarCount --;
+
+                map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
+
+                currentRadar.shift();
+
+                //radarCount ++; 
+                currentRadar.push(layer);
+
+                map.setLayoutProperty(layer, 'visibility', 'visible');
+                //removeRadar(layer);
+
+                // setTimeout(function () {
+                //     removeRadar(layer);
+                // }, 2000);
+            }
+        })
+    }, 2000)
+}
+
+function setLayersInvisible() {
+    layerNames.forEach(function(layer) {
+        map.setLayoutProperty(layer, 'visibility', 'none');
+    });
+}
+
+function removeRadar(layer) {
+    map.setLayoutProperty(layer, 'visibility', 'none');
+
+    currentRadar.shift();
+}
+
+function startRadar(index) {
+    setTimeout(function () {
+        map.setLayoutProperty('layer' + index, 'visibility', 'visible');
+    }, 5000)
+}
 
 function sleep(milliseconds) {
   var start = new Date().getTime();
@@ -128,28 +193,6 @@ function removeItem(array, layerId) {
     if(i != -1) {
         array.splice(i,1);
     }
-}
-
-function insertColorOld(geoJ) {
-    for(i=0; i <= geoJ.features.length - 1; i++)
-        //console.log(geoJ.features[i].properties)
-        if (geoJ.features[i].properties.ptype === "rain") {
-            geoJ.features[i].properties.color = 'blue';
-        }
-        else if (geoJ.features[i].properties.ptype === "freezing_rain") {
-            geoJ.features[i].properties.color = 'orange';
-        }
-        else if (geoJ.features[i].properties.ptype === "snow") {
-            geoJ.features[i].properties.color = 'red';
-        }
-        else if (geoJ.features[i].properties.ptype === "sleet") {
-            geoJ.features[i].properties.color = 'blue';
-        }
-        else {
-            geoJ.features[i].properties.color = 'blue';
-        }
-        //newJson.features[i].properties.color = 
-    return geoJ;
 }
 
 function insertColor(geoJ) {
