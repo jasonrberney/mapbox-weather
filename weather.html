@@ -19,245 +19,209 @@
 </div>
 
 <script>
-mapboxgl.accessToken = 'pk.eyJ1IjoiZXRwaW5hcmQiLCJhIjoiY2luMHIyc2YwMGFzcXZobTRpYTBvZTFrOCJ9.GuIGZ1prg2ziFQ_bzdu5Lw';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiZXRwaW5hcmQiLCJhIjoiY2luMHIyc2YwMGFzcXZobTRpYTBvZTFrOCJ9.GuIGZ1prg2ziFQ_bzdu5Lw';
 
-var radar = [geojson1, geojson2, geojson3, geojson4, geojson5]
+    var radar = [geojson1, geojson2, geojson3, geojson4, geojson5]
 
-radar.forEach(radarElem => {
-    insertColor(radarElem);
-});
-
-var finalGeoJ = radar[0];
-
-console.log('version:', mapboxgl.version);
-
-var map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v9',
-    center: [-67, 45.5],
-    zoom: 4,
-    pitch: 80
-});
-
-let layerNames = [];
-
-map.on('load', function() {
-    count = 0;
-
-    radar.forEach(finalRadar => {
-
-        var sourceName = 'source' + count;
-        var layerName = 'layer' + count;
-        layerNames.push(layerName);
-
-        map.addSource(sourceName, {
-            type: 'geojson',
-            data: finalRadar
-        });
-        
-        map.addLayer({
-            id: layerName,
-            source: sourceName,
-            type: 'fill',
-            paint: {
-                'fill-color': ['get', 'color'],
-                // 'fill-color': [
-                //     //'interpolate',
-                //     //['linear'],
-                //     ['get', 'ptype'],
-                //     'rain', '#F2F12D',
-                //     'freezing_rain', '#CA8323',
-                //     'snow', '#A25626',
-                //     'sleet', '#723122'
-                // ],
-                'fill-opacity': .2
-            },
-            layout: {
-                visibility: 'none',
-            },
-        });
-
-        count ++;
+    radar.forEach(radarElem => {
+        insertColor(radarElem);
     });
-});
 
-var currentRadar = [];
-var radarCount = 0;
+    var finalGeoJ = radar[0];
 
-function loopRadar() {
+    console.log('version:', mapboxgl.version);
 
-    setInterval(function () {
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/dark-v9',
+        center: [-98.4936, 29.4241],
+        zoom: 5,
+        pitch: 80
+    });
 
-        layerNames.forEach(function(layer, idx, array) {
-            setInterval(function () {
-                if (radarCount < 2) {
-                    radarCount ++; 
-                    currentRadar.push(layer);
-                    map.setLayoutProperty(layer, 'visibility', 'visible');
-                }   
-                else if (radarCount === 2) {
-                    map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
-                    currentRadar.shift();
+    let layerNames = [];
 
-                    currentRadar.push(layer);
-                    map.setLayoutProperty(layer, 'visibility', 'visible');
-                }
-            }, 1000)
+    map.on('load', function() {
+        count = 0;
+
+        radar.forEach(finalRadar => {
+
+            var sourceName = 'source' + count;
+            var layerName = 'layer' + count;
+            layerNames.push(layerName);
+
+            map.addSource(sourceName, {
+                type: 'geojson',
+                data: finalRadar
+            });
+            
+            map.addLayer({
+                id: layerName,
+                source: sourceName,
+                type: 'fill',
+                paint: {
+                    'fill-color': ['get', 'color'],
+                    // BELOW IS ANOTHER POTENTIAL WAY TO ASSIGN COLOR GRADIENT FOR RADAR
+                    // 'fill-color': [
+                    //     //'interpolate',
+                    //     //['linear'],
+                    //     ['get', 'ptype'],
+                    //     'rain', '#F2F12D',
+                    //     'freezing_rain', '#CA8323',
+                    //     'snow', '#A25626',
+                    //     'sleet', '#723122'
+                    // ],
+                    'fill-opacity': 0,
+                    'fill-opacity-transition': {
+                        'duration': 1000
+                    }
+                },
+                layout: {
+                    visibility: 'visible',
+                },
+            });
+
+            count ++;
+        });
+    });
+
+    var currentRadar = [];
+    var radarCount = 0;
+
+    // Promise to be used with await function to delay radar transitions
+    const waitFor = (ms) => new Promise(r => setTimeout(r, ms))
+
+    // Create an async foreach function to wait for callback to finish and delay radar transitions
+    async function asyncForEach(array, callback) {
+        for (let index = 0; index < array.length; index++) {
+            await callback(array[index], index, array)
+        }
+    }
+
+    const startRadar = async () => {
+        await asyncForEach(layerNames, async (layer) => {
+            // async Promise to wait for 1.5 seconds before fading out previous and fading in next radar
+            await waitFor(1500)
+            // You can change this if else statement to add more than one radar polygon to the map at a time
+            if (radarCount < 1) {
+                radarCount ++; 
+
+                currentRadar.push(layer);
+                // Option to setLayoutProperty for visible/invisible but cannot use fade-duration with fill (polygon)
+                // therefore I am using setPaintProperty
+                //map.setLayoutProperty(layer, 'visibility', 'visible');
+                map.setPaintProperty(layer, 'fill-opacity', .2)
+                console.log('set ' + layer + ' visible');
+            }   
+            else if (radarCount === 1) {
+                //map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
+                map.setPaintProperty(currentRadar[0], 'fill-opacity', 0)
+                console.log('set ' + currentRadar[0] + ' invisible');
+                currentRadar.shift();
+
+                currentRadar.push(layer);
+                //map.setLayoutProperty(layer, 'visibility', 'visible');
+                map.setPaintProperty(layer, 'fill-opacity', .2)
+                console.log('set ' + layer + ' visible');
+            }
         })
-        
+        // wait for another 1.5 seconds before setting all radar invisible using setLayersInvisible
+        await waitFor(1500)
         radarCount = 0;
         currentRadar = [];
-
-    }, 2000)
-}
-
-const waitFor = (ms) => new Promise(r => setTimeout(r, ms))
-
-async function asyncForEach(array, callback) {
-    for (let index = 0; index < array.length; index++) {
-        await callback(array[index], index, array)
+        setLayersInvisible();
+        console.log('Done')
     }
-}
+    startRadar();
 
-const start = async () => {
-    await asyncForEach([1, 2, 3], async (num) => {
-        await waitFor(2000)
-        console.log(num)
-    })
-    console.log('Done')
-}
-start()
-
-const startRadar = async () => {
-    await asyncForEach(layerNames, async (layer) => {
-        await waitFor(2000)
-
-        if (radarCount < 2) {
-
-            radarCount ++; 
-
-            currentRadar.push(layer);
-
-            map.setLayoutProperty(layer, 'visibility', 'visible');
-            console.log('set ' + layer + ' visible');
-        }   
-        else if (radarCount === 2) {
-
-            map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
-            console.log('set ' + currentRadar[0] + ' invisible');
-            currentRadar.shift();
-
-            currentRadar.push(layer);
-
-            map.setLayoutProperty(layer, 'visibility', 'visible');
-            console.log('set ' + layer + ' visible');
-        }
-    })
-    setLayersInvisible();
-    console.log('Done')
-}
-startRadar();
-
-/* ERICHs CODE BELOW
-
-var animate = function (isOn) {
-    let self = this;
-    if ("undefined" === typeof(isOn)) {
-        this.isAnimating = !this.isAnimating;
-    }else{
-        this.isAnimating = isOn;
+    function setLayersInvisible() {
+        layerNames.forEach(function(layer) {
+            //map.setLayoutProperty(layer, 'visibility', 'none');
+            map.setPaintProperty(layer, 'fill-opacity', 0)
+        });
     }
 
-    if (this.isAnimating) {
-        this.state = 'animate';
-        if (this.animateInterval) {
-            clearInterval(this.animateInterval);
-        }
-        this.animateInterval = setInterval(function () {
-            self.next();
-        }, 200);
-    } else {
-        this.state = 'paused';
-        if (this.animateInterval) {
-            clearInterval(this.animateInterval);
-        }
-        this.currentIdx = 0;
+    function insertColor(geoJ) {
+        for(i=0; i <= geoJ.features.length - 1; i++)
+            //console.log(geoJ.features[i].properties)
+            if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 10) {
+                geoJ.features[i].properties.color = '#009fff';
+            }
+            else if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 15) {
+                geoJ.features[i].properties.color = '#0063ff';
+            }
+            else if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 20) {
+                geoJ.features[i].properties.color = '#0038ff';
+            }
+            else if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 25) {
+                geoJ.features[i].properties.color = '#0308fc';
+            }
+            else if (geoJ.features[i].properties.ptype === "freezing_rain") {
+                geoJ.features[i].properties.color = 'yellow';
+            }
+            else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 10) {
+                geoJ.features[i].properties.color = '#fcff00';
+            }
+            else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 15) {
+                geoJ.features[i].properties.color = '#ffd700';
+            }
+            else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 20) {
+                geoJ.features[i].properties.color = '#ffa100';
+            }
+            else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 25) {
+                geoJ.features[i].properties.color = '#fc7800';
+            }
+            else if (geoJ.features[i].properties.ptype === "sleet") {
+                geoJ.features[i].properties.color = 'pink';
+            }
+            else {
+                geoJ.features[i].properties.color = 'blue';
+            }
+        return geoJ;
     }
-};
-var next = function () {
-    let c = this.currentIdx;
-    let n = undefined;
-    if (this.currentIdx === 0) {
-        n = this.layers.length - 1;
-    } else {
-        n = c - 1;
+
+    /* ONLINE SAMPLE FOR ASYNC FUNCTION
+
+    const start = async () => {
+        await asyncForEach([1, 2, 3], async (num) => {
+            await waitFor(2000)
+            console.log(num)
+        })
+        console.log('Done')
     }
-    this.currentIdx = n;
-    this.layers[n].setVisible(true);
-    this.layers[c].setVisible(false);
+    //start()
 
-};
+    */
 
-var stop = function () {
-    if (this.isAnimating) {
-        this.animate(false);
+    /* My first attempt
+
+        function loopRadar() {
+
+        setInterval(function () {
+
+            layerNames.forEach(function(layer, idx, array) {
+                setInterval(function () {
+                    if (radarCount < 2) {
+                        radarCount ++; 
+                        currentRadar.push(layer);
+                        map.setLayoutProperty(layer, 'visibility', 'visible');
+                    }   
+                    else if (radarCount === 2) {
+                        map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
+                        currentRadar.shift();
+
+                        currentRadar.push(layer);
+                        map.setLayoutProperty(layer, 'visibility', 'visible');
+                    }
+                }, 1000)
+            })
+            
+            radarCount = 0;
+            currentRadar = [];
+
+        }, 2000)
     }
-};
 
-*/
-
-function setLayersInvisible() {
-    layerNames.forEach(function(layer) {
-        map.setLayoutProperty(layer, 'visibility', 'none');
-    });
-}
-
-function sleep(milliseconds) {
-  var start = new Date().getTime();
-  for (var i = 0; i < 1e7; i++) {
-    if ((new Date().getTime() - start) > milliseconds){
-      break;
-    }
-  }
-}
-
-function insertColor(geoJ) {
-    for(i=0; i <= geoJ.features.length - 1; i++)
-        //console.log(geoJ.features[i].properties)
-        if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 10) {
-            geoJ.features[i].properties.color = '#009fff';
-        }
-        else if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 15) {
-            geoJ.features[i].properties.color = '#0063ff';
-        }
-        else if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 20) {
-            geoJ.features[i].properties.color = '#0038ff';
-        }
-        else if (geoJ.features[i].properties.ptype === "rain" && geoJ.features[i].properties.value === 25) {
-            geoJ.features[i].properties.color = '#0308fc';
-        }
-        else if (geoJ.features[i].properties.ptype === "freezing_rain") {
-            geoJ.features[i].properties.color = 'yellow';
-        }
-        else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 10) {
-            geoJ.features[i].properties.color = '#fcff00';
-        }
-        else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 15) {
-            geoJ.features[i].properties.color = '#ffd700';
-        }
-        else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 20) {
-            geoJ.features[i].properties.color = '#ffa100';
-        }
-        else if (geoJ.features[i].properties.ptype === "snow" && geoJ.features[i].properties.value === 25) {
-            geoJ.features[i].properties.color = '#fc7800';
-        }
-        else if (geoJ.features[i].properties.ptype === "sleet") {
-            geoJ.features[i].properties.color = 'pink';
-        }
-        else {
-            geoJ.features[i].properties.color = 'blue';
-        }
-    return geoJ;
-}
+    */
 
 </script>
