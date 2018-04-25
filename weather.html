@@ -15,7 +15,7 @@
 </style>
 
 <div id='map'>
-    <button onclick="loopRadar()">radar</button>
+    <button onclick="startRadar()">radar</button>
 </div>
 
 <script>
@@ -81,102 +81,135 @@ map.on('load', function() {
     });
 });
 
-// setInterval(function () {
-
-//     visibleLayers = [];
-
-//     if(!visibleLayers.includes('layer1')) {
-//         map.setLayoutProperty('layer1', 'visibility', 'visible');
-//         visibleLayers.push('layer1');
-//         console.log("added layer 1");
-//         sleep(10000);
-//     }
-//     if(!visibleLayers.includes('layer2')) {
-//         map.setLayoutProperty('layer2', 'visibility', 'visible');
-//         visibleLayers.push('layer2');
-//         console.log("added layer 2");
-//         sleep(10000);
-//         map.setLayoutProperty('layer1', 'visibility', 'none');
-//         removeItem(visibleLayers, 'layer1');
-//         console.log("removed layer 1");
-//         sleep(10000);
-//     }
-//     if(!visibleLayers.includes('layer3')) {
-//         map.setLayoutProperty('layer3', 'visibility', 'visible');
-//         visibleLayers.push('layer3');
-//         console.log("added layer 3");
-//         sleep(10000);
-//         map.setLayoutProperty('layer2', 'visibility', 'none');
-//         removeItem(visibleLayers, 'layer2');
-//         console.log("removed layer 2");
-//         sleep(10000);
-//     }
-//     map.setLayoutProperty('layer3', 'visibility', 'none');
-//     removeItem(visibleLayers, 'layer3');
-//     console.log("removed layer 3");
-// }, 10000);
 var currentRadar = [];
+var radarCount = 0;
 
 function loopRadar() {
-    radarCount = 0;
 
     setInterval(function () {
-        
-        setLayersInvisible();
 
         layerNames.forEach(function(layer, idx, array) {
-            if (idx === array.length -1) {
-                radarCount = 0;
-                currentRadar = [];
-            }
-            else if (radarCount < 2) {
+            setInterval(function () {
+                if (radarCount < 2) {
+                    radarCount ++; 
+                    currentRadar.push(layer);
+                    map.setLayoutProperty(layer, 'visibility', 'visible');
+                }   
+                else if (radarCount === 2) {
+                    map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
+                    currentRadar.shift();
 
-                radarCount ++; 
-                currentRadar.push(layer);
-
-                map.setLayoutProperty(layer, 'visibility', 'visible');
-
-                // setTimeout(function () {
-                //     map.setLayoutProperty(layer, 'visibility', 'visible');
-                // }, 2000);          
-            }   
-            else if (radarCount === 2) {
-                radarCount --;
-
-                map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
-
-                currentRadar.shift();
-
-                //radarCount ++; 
-                currentRadar.push(layer);
-
-                map.setLayoutProperty(layer, 'visibility', 'visible');
-                //removeRadar(layer);
-
-                // setTimeout(function () {
-                //     removeRadar(layer);
-                // }, 2000);
-            }
+                    currentRadar.push(layer);
+                    map.setLayoutProperty(layer, 'visibility', 'visible');
+                }
+            }, 1000)
         })
+        
+        radarCount = 0;
+        currentRadar = [];
+
     }, 2000)
 }
+
+const waitFor = (ms) => new Promise(r => setTimeout(r, ms))
+
+async function asyncForEach(array, callback) {
+    for (let index = 0; index < array.length; index++) {
+        await callback(array[index], index, array)
+    }
+}
+
+const start = async () => {
+    await asyncForEach([1, 2, 3], async (num) => {
+        await waitFor(2000)
+        console.log(num)
+    })
+    console.log('Done')
+}
+start()
+
+const startRadar = async () => {
+    await asyncForEach(layerNames, async (layer) => {
+        await waitFor(2000)
+
+        if (radarCount < 2) {
+
+            radarCount ++; 
+
+            currentRadar.push(layer);
+
+            map.setLayoutProperty(layer, 'visibility', 'visible');
+            console.log('set ' + layer + ' visible');
+        }   
+        else if (radarCount === 2) {
+
+            map.setLayoutProperty(currentRadar[0], 'visibility', 'none');
+            console.log('set ' + currentRadar[0] + ' invisible');
+            currentRadar.shift();
+
+            currentRadar.push(layer);
+
+            map.setLayoutProperty(layer, 'visibility', 'visible');
+            console.log('set ' + layer + ' visible');
+        }
+    })
+    setLayersInvisible();
+    console.log('Done')
+}
+startRadar();
+
+/* ERICHs CODE BELOW
+
+var animate = function (isOn) {
+    let self = this;
+    if ("undefined" === typeof(isOn)) {
+        this.isAnimating = !this.isAnimating;
+    }else{
+        this.isAnimating = isOn;
+    }
+
+    if (this.isAnimating) {
+        this.state = 'animate';
+        if (this.animateInterval) {
+            clearInterval(this.animateInterval);
+        }
+        this.animateInterval = setInterval(function () {
+            self.next();
+        }, 200);
+    } else {
+        this.state = 'paused';
+        if (this.animateInterval) {
+            clearInterval(this.animateInterval);
+        }
+        this.currentIdx = 0;
+    }
+};
+var next = function () {
+    let c = this.currentIdx;
+    let n = undefined;
+    if (this.currentIdx === 0) {
+        n = this.layers.length - 1;
+    } else {
+        n = c - 1;
+    }
+    this.currentIdx = n;
+    this.layers[n].setVisible(true);
+    this.layers[c].setVisible(false);
+
+};
+
+var stop = function () {
+    if (this.isAnimating) {
+        this.animate(false);
+    }
+};
+
+*/
 
 function setLayersInvisible() {
     layerNames.forEach(function(layer) {
         map.setLayoutProperty(layer, 'visibility', 'none');
     });
-}
-
-function removeRadar(layer) {
-    map.setLayoutProperty(layer, 'visibility', 'none');
-
-    currentRadar.shift();
-}
-
-function startRadar(index) {
-    setTimeout(function () {
-        map.setLayoutProperty('layer' + index, 'visibility', 'visible');
-    }, 5000)
 }
 
 function sleep(milliseconds) {
@@ -186,13 +219,6 @@ function sleep(milliseconds) {
       break;
     }
   }
-}
-
-function removeItem(array, layerId) {
-    var i = array.indexOf(layerId);
-    if(i != -1) {
-        array.splice(i,1);
-    }
 }
 
 function insertColor(geoJ) {
@@ -231,7 +257,6 @@ function insertColor(geoJ) {
         else {
             geoJ.features[i].properties.color = 'blue';
         }
-        //newJson.features[i].properties.color = 
     return geoJ;
 }
 
