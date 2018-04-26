@@ -6,6 +6,7 @@
 <script src="./radar3.js"></script>
 <script src="./radar4.js"></script>
 <script src="./radar5.js"></script>
+<script src="./MyFirstLibrary.js"></script>
 <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.css' rel='stylesheet' />
 <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.2/mapbox-gl.js'></script>
 
@@ -19,6 +20,9 @@
 </div>
 
 <script>
+    var test = new MyFirstLibrary.Dog();
+    console.log(test.name);
+
     mapboxgl.accessToken = 'pk.eyJ1IjoiZXRwaW5hcmQiLCJhIjoiY2luMHIyc2YwMGFzcXZobTRpYTBvZTFrOCJ9.GuIGZ1prg2ziFQ_bzdu5Lw';
 
     var radar = [geojson1, geojson2, geojson3, geojson4, geojson5]
