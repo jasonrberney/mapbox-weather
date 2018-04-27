@@ -1,7 +1,7 @@
 /* global describe, it, before */
 
 import chai from 'chai';
-import {Cat, Dog} from '../lib/webpack-library-starter.js';
+import {Cat, Dog, Radar} from '../lib/WDT.js';
 
 chai.expect();
 
@@ -30,3 +30,15 @@ describe('Given an instance of my Dog library', () => {
     });
   });
 });
+
+describe('Given an instance of my Radar library', () => {
+  before(() => {
+    lib = new Radar();
+  });
+  describe('when I need the name', () => {
+    it('should return the name', () => {
+      expect(lib.name).to.be.equal('Radar');
+    });
+  });
+});
+

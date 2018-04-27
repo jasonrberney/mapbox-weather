@@ -1,3 +1,4 @@
 import Cat from './cat.js';
 import Dog from './dog.js';
-export { Dog, Cat };
+import Radar from './radar.js';
+export { Dog, Cat, Radar };

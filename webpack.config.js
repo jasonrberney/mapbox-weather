@@ -6,15 +6,15 @@ const path = require('path');
 const env = require('yargs').argv.env; // use --env with webpack 2
 const pkg = require('./package.json');
 
-let WDTweather = pkg.name;
+let WDT = pkg.name;
 
 let plugins = [], outputFile;
 
 if (env === 'build') {
   plugins.push(new UglifyJsPlugin({ minimize: true }));
-  outputFile = WDTweather + '.min.js';
+  outputFile = WDT + '.min.js';
 } else {
-  outputFile = WDTweather + '.js';
+  outputFile = WDT + '.js';
 }
 
 const config = {
@@ -23,7 +23,7 @@ const config = {
   output: {
     path: __dirname + '/lib',
     filename: outputFile,
-    library: WDTweather,
+    library: WDT,
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
